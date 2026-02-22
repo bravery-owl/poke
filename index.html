@@ -453,27 +453,102 @@
             grid-column: 1 / -1;
         }
 
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 1.8rem;
-            }
-            .theme-toggle {
-                top: 10px;
-                right: 10px;
-                width: 35px;
-                height: 35px;
-                font-size: 1.2rem;
-            }
+        /* ===== カード上部タイプカラーストライプ ===== */
+        .card-type-stripe {
+            height: 6px;
+            margin: -20px -20px 14px; /* card padding=20px に合わせてカード幅まで伸ばす */
+            border-radius: 10px 10px 0 0;
+            flex-shrink: 0;
+        }
+
+        /* ===== タブレット (〜900px) ===== */
+        @media (max-width: 900px) {
             .pokemon-grid {
-                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-                gap: 15px;
+                grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+                gap: 14px;
             }
-            .search-box {
-                flex-direction: column;
+        }
+
+        /* ===== モバイル共通 (〜768px) ===== */
+        @media (max-width: 768px) {
+            /* コンテナ */
+            .container { padding: 10px; }
+
+            /* ヘッダー */
+            header { padding: 18px 12px; margin-bottom: 14px; }
+            header h1 { font-size: 1.55rem; }
+            header p  { font-size: 0.88rem; }
+            .theme-toggle { top: 10px; right: 10px; width: 34px; height: 34px; font-size: 1.1rem; }
+
+            /* スタッツバー */
+            .stats-bar { padding: 10px 4px; margin-bottom: 14px; }
+            .stat-value { font-size: 1.35rem; }
+            .stat-label { font-size: 0.7rem; margin-top: 2px; }
+            .stat-generation { display: none; } /* せだいすうを非表示 */
+
+            /* 検索・フィルター */
+            .search-filter { padding: 13px; margin-bottom: 14px; }
+            .search-box { flex-direction: column; gap: 9px; margin-bottom: 12px; }
+            .search-input { min-width: 100%; font-size: 0.95rem; }
+            .filter-actions { gap: 7px; flex-wrap: wrap; }
+            .filter-select { min-width: 110px; font-size: 0.85rem; padding: 8px 10px; }
+            .fav-filter-btn { padding: 7px 11px; font-size: 0.82rem; }
+            .clear-btn { padding: 7px 11px; font-size: 0.82rem; }
+
+            /* タイプフィルター: 横スクロールに変更 */
+            .type-filters {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding-bottom: 8px;
+                margin-top: 10px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+                scroll-snap-type: x proximity;
             }
-            .search-input {
-                min-width: 100%;
+            .type-filters .type-badge {
+                flex-shrink: 0;
+                scroll-snap-align: start;
             }
+
+            /* ポケモングリッド: 2カラム固定 */
+            .pokemon-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+
+            /* ポケモンカード */
+            .pokemon-card { padding: 12px; border-radius: 10px; }
+            .card-type-stripe { margin: -12px -12px 10px; border-radius: 8px 8px 0 0; }
+            .pokemon-image-container { height: 105px; margin-bottom: 10px; }
+            .pokemon-image { width: 88px; height: 88px; }
+            .pokemon-name { font-size: 1rem; margin-bottom: 6px; }
+            .pokemon-description { font-size: 0.78rem; margin-top: 6px; }
+            .fav-btn { font-size: 1.1rem; top: 5px; right: 5px; }
+            .pokemon-types { gap: 4px; margin-bottom: 8px; }
+            .pokemon-types .type-badge { padding: 3px 8px; font-size: 0.78rem; }
+
+            /* モーダル */
+            .modal { padding: 8px; }
+            .modal-content { margin: 8px auto; border-radius: 12px; }
+            .modal-header { padding: 18px 14px; }
+            .modal-body { padding: 16px; }
+            .modal-pokemon-image { width: 140px; height: 140px; }
+            .close-modal { top: 12px; right: 14px; font-size: 1.6rem; width: 34px; height: 34px; }
+        }
+
+        /* ===== 小型スマホ (〜420px) ===== */
+        @media (max-width: 420px) {
+            header h1 { font-size: 1.25rem; }
+            .pokemon-grid { gap: 6px; }
+            .pokemon-card { padding: 9px; border-radius: 8px; }
+            .card-type-stripe { margin: -9px -9px 8px; border-radius: 6px 6px 0 0; }
+            .pokemon-image-container { height: 88px; }
+            .pokemon-image { width: 74px; height: 74px; }
+            .pokemon-name { font-size: 0.9rem; }
+            .pokemon-types .type-badge { padding: 2px 6px; font-size: 0.72rem; }
+            .pokemon-description { font-size: 0.74rem; }
         }
 
         /* ===== お気に入りスターボタン（カード右上）===== */
@@ -577,7 +652,7 @@
                 <div class="stat-value" id="displayCount">0</div>
                 <div class="stat-label">ひょうじちゅう</div>
             </div>
-            <div class="stat-item">
+            <div class="stat-item stat-generation">
                 <div class="stat-value" id="generationCount">9</div>
                 <div class="stat-label">せだいすう</div>
             </div>
@@ -664,6 +739,21 @@
         };
 
         const allTypes = Object.keys(typeColors);
+
+        // タイプごとの絵文字アイコン（こどもにわかりやすく！）
+        const typeEmojis = {
+            'ノーマル': '⭐', 'ほのお': '🔥', 'みず': '💧', 'でんき': '⚡',
+            'くさ': '🍃', 'こおり': '❄️', 'かくとう': '👊', 'どく': '☠️',
+            'じめん': '🌍', 'ひこう': '🌬️', 'エスパー': '🔮', 'むし': '🐛',
+            'いわ': '🪨', 'ゴースト': '👻', 'ドラゴン': '🐲', 'あく': '🌑',
+            'はがね': '⚙️', 'フェアリー': '🩷'
+        };
+
+        // タイプバッジのHTML生成ヘルパー（絵文字つき）
+        function typeBadgeHtml(type, extraStyle = '') {
+            const emoji = typeEmojis[type] || '';
+            return `<span class="type-badge" style="background-color:${typeColors[type]};${extraStyle}">${emoji} ${type}</span>`;
+        }
 
         // そうぜいやく630ひきのとうごうデータ
         const pokemonData = [
@@ -1794,7 +1884,8 @@
                 // せんたくされていなくて、かつavailableにないものはグレーアウト
                 const isAvailable = availableTypes.has(type);
                 const classes = `type-badge ${isActive ? 'active' : ''} ${!isAvailable && !isActive ? 'disabled' : ''}`;
-                return `<span class="${classes}" style="background-color: ${typeColors[type]}" data-type="${type}">${type}</span>`;
+                const emoji = typeEmojis[type] || '';
+                return `<span class="${classes}" style="background-color: ${typeColors[type]}" data-type="${type}">${emoji} ${type}</span>`;
             }).join('');
         }
 
@@ -1807,8 +1898,11 @@
 
             grid.innerHTML = pokemon.map(p => {
                 const fav = isFavorite(p.id);
+                const primaryColor = typeColors[p.types[0]] || 'var(--color-accent)';
                 return `
                 <div class="pokemon-card" data-id="${p.id}">
+                    <!-- タイプカラーのストライプ帯（カード上部） -->
+                    <div class="card-type-stripe" style="background:${primaryColor};"></div>
                     <button class="fav-btn${fav ? ' active' : ''}" data-fav-id="${p.id}" title="おきにいりについか" aria-label="おきにいり">
                         ${fav ? '★' : '☆'}
                     </button>
@@ -1824,9 +1918,7 @@
                     </div>
                     <div class="pokemon-name">${p.name}</div>
                     <div class="pokemon-types">
-                        ${p.types.map(type => `
-                            <span class="type-badge" style="background-color: ${typeColors[type]}">${type}</span>
-                        `).join('')}
+                        ${p.types.map(type => typeBadgeHtml(type)).join('')}
                     </div>
                     <div class="pokemon-description">${p.description.substring(0, 60)}...</div>
                 </div>
@@ -1953,12 +2045,10 @@
             modalContent.innerHTML = `
                 <h2 style="font-size: 2rem; margin-bottom: 10px;">No. ${String(pokemon.id).padStart(4, '0')} ${pokemon.name}</h2>
                 <div class="pokemon-types">
-                    ${pokemon.types.map(type => `
-                        <span class="type-badge" style="background-color: ${typeColors[type]}">${type}</span>
-                    `).join('')}
+                    ${pokemon.types.map(type => typeBadgeHtml(type)).join('')}
                 </div>
-                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png" 
-                     alt="${pokemon.name}" 
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png"
+                     alt="${pokemon.name}"
                      class="modal-pokemon-image"
                      onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png'">
             `;
@@ -1971,9 +2061,7 @@
                 <div class="detail-section">
                     <h3>🎯 タイプ</h3>
                     <div class="pokemon-types" style="justify-content: flex-start;">
-                        ${pokemon.types.map(type => `
-                            <span class="type-badge" style="background-color: ${typeColors[type]}; padding: 8px 16px; font-size: 1rem;">${type}</span>
-                        `).join('')}
+                        ${pokemon.types.map(type => typeBadgeHtml(type, 'padding: 8px 16px; font-size: 1rem;')).join('')}
                     </div>
                 </div>
                 <div class="detail-section">
