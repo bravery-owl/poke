@@ -495,20 +495,11 @@
             .fav-filter-btn { padding: 7px 11px; font-size: 0.82rem; }
             .clear-btn { padding: 7px 11px; font-size: 0.82rem; }
 
-            /* タイプフィルター: 横スクロールに変更 */
+            /* タイプフィルター: スマホでもきれいに折り返し */
             .type-filters {
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                overflow-y: hidden;
-                padding-bottom: 8px;
+                flex-wrap: wrap;
                 margin-top: 10px;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: thin;
-                scroll-snap-type: x proximity;
-            }
-            .type-filters .type-badge {
-                flex-shrink: 0;
-                scroll-snap-align: start;
+                gap: 6px;
             }
 
             /* ポケモングリッド: 2カラム固定 */
@@ -633,6 +624,114 @@
         .back-to-top:hover {
             background: var(--color-accent-hover);
         }
+
+        /* ===== もじフィルター トグルボタン ===== */
+        .char-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 7px 14px;
+            border: 2px solid var(--color-border);
+            border-radius: 20px;
+            background: var(--color-bg-primary);
+            color: var(--color-text-secondary);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s, background 0.2s;
+            white-space: nowrap;
+        }
+        .char-toggle-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+        .char-toggle-btn.active {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            background: rgba(33, 128, 141, 0.08);
+        }
+        .char-toggle-arrow {
+            display: inline-block;
+            transition: transform 0.25s ease;
+            font-style: normal;
+        }
+        .char-toggle-btn.open .char-toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* ===== もじフィルター パネル（折りたたみアニメーション）===== */
+        .char-filters {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            /* pointerEventsを消してclosed時はクリック不可に */
+            pointer-events: none;
+            transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .char-filters.open {
+            max-height: 600px;
+            opacity: 1;
+            pointer-events: auto;
+            margin-top: 14px;
+        }
+
+        .char-filter-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .char-filter-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            min-width: 68px;
+            padding-top: 5px;
+            flex-shrink: 0;
+        }
+        .char-btn-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .char-btn {
+            padding: 3px 10px;
+            border: 2px solid var(--color-border);
+            border-radius: 16px;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            line-height: 1.5;
+        }
+        .char-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            background: rgba(33, 128, 141, 0.07);
+        }
+        .char-btn.active {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .char-toggle-btn { font-size: 0.8rem; padding: 6px 11px; margin-top: 10px; }
+            .char-filter-label { min-width: 54px; font-size: 0.7rem; padding-top: 4px; }
+            .char-btn { padding: 2px 7px; font-size: 0.78rem; }
+            .char-btn-wrap { gap: 4px; }
+        }
+        @media (max-width: 420px) {
+            .char-filter-label { min-width: 46px; font-size: 0.65rem; }
+            .char-btn { padding: 2px 6px; font-size: 0.72rem; }
+        }
     </style>
 </head>
 <body>
@@ -688,6 +787,20 @@
                 </div>
             </div>
             <div class="type-filters" id="typeFilters"></div>
+            <!-- もじフィルター：トグルボタンで開閉 -->
+            <button class="char-toggle-btn" id="charToggleBtn" title="はじまり・おわりのもじでしぼりこむ">
+                🔤 もじでさがす <span class="char-toggle-arrow">▼</span>
+            </button>
+            <div class="char-filters" id="charFilters">
+                <div class="char-filter-row">
+                    <span class="char-filter-label">🔤 はじまり</span>
+                    <div class="char-btn-wrap" id="firstCharButtons"></div>
+                </div>
+                <div class="char-filter-row">
+                    <span class="char-filter-label">🔤 おわり</span>
+                    <div class="char-btn-wrap" id="lastCharButtons"></div>
+                </div>
+            </div>
         </div>
 
         <div id="pokemonGrid" class="pokemon-grid"></div>
@@ -753,6 +866,14 @@
         function typeBadgeHtml(type, extraStyle = '') {
             const emoji = typeEmojis[type] || '';
             return `<span class="type-badge" style="background-color:${typeColors[type]};${extraStyle}">${emoji} ${type}</span>`;
+        }
+
+        // ===== ひらがな・カタカナ正規化ユーティリティ =====
+        // カタカナ（ァ〜ヶ: U+30A1〜U+30F6）をひらがなに変換。それ以外はそのまま。
+        function toHiragana(str) {
+            return str.replace(/[\u30A1-\u30F6]/g, ch =>
+                String.fromCharCode(ch.charCodeAt(0) - 0x60)
+            );
         }
 
         // そうぜいやく630ひきのとうごうデータ
@@ -1817,6 +1938,10 @@
         const FAV_KEY = 'pokemon-favorites';
         let showFavOnly = false;
 
+        // ===== もじフィルターじょうたい =====
+        let firstCharFilter = null; // はじまりのもじ（null = フィルターなし）
+        let lastCharFilter  = null; // おわりのもじ（null = フィルターなし）
+
         function getFavorites() {
             try {
                 return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]'));
@@ -1843,6 +1968,7 @@
             // しょきソート（ずかんばんごうじゅん）
             pokemonData.sort((a, b) => a.id - b.id);
             renderTypeFilters();
+            renderCharFilters();
             renderPokemon(pokemonData);
             attachEventListeners();
             updateDisplayCount();
@@ -1856,17 +1982,21 @@
                 return;
             }
 
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rawSearch = document.getElementById('searchInput').value;
+            const searchTerm = toHiragana(rawSearch.toLowerCase());
             const generation = document.getElementById('generationFilter').value;
 
             // けんさくワードやせだい、そして「げんざいせんたくされているすべてのタイプ」をもつポケモンをちゅうしゅつ
             const currentFiltered = pokemonData.filter(p => {
-                const matchesSearch = p.name.toLowerCase().includes(searchTerm) || 
-                                     String(p.id).includes(searchTerm);
+                const normalizedName = toHiragana(p.name.toLowerCase());
+                const matchesSearch = normalizedName.includes(searchTerm) ||
+                                     String(p.id).includes(rawSearch);
                 const matchesGeneration = !generation || p.generation === parseInt(generation);
                 const matchesSelectedTypes = Array.from(selectedTypes).every(t => p.types.includes(t));
-                
-                return matchesSearch && matchesGeneration && matchesSelectedTypes;
+                const matchesFirst = !firstCharFilter || toHiragana(p.name[0]) === firstCharFilter;
+                const matchesLast  = !lastCharFilter  || toHiragana(p.name[p.name.length - 1]) === lastCharFilter;
+
+                return matchesSearch && matchesGeneration && matchesSelectedTypes && matchesFirst && matchesLast;
             });
 
             // ちゅうしゅつされたポケモンがもっているタイプのみを「せんたくかのうなタイプ」とする
@@ -1887,6 +2017,40 @@
                 const emoji = typeEmojis[type] || '';
                 return `<span class="${classes}" style="background-color: ${typeColors[type]}" data-type="${type}">${emoji} ${type}</span>`;
             }).join('');
+        }
+
+        function renderCharFilters() {
+            // ポケモンなまえのさいしょ・さいごのもじをひらがなに正規化してリストアップ（重複なし・ソート済み）
+            const firstChars = [...new Set(pokemonData.map(p => toHiragana(p.name[0])))].sort();
+            const lastChars  = [...new Set(pokemonData.map(p => toHiragana(p.name[p.name.length - 1])))].sort();
+
+            document.getElementById('firstCharButtons').innerHTML =
+                firstChars.map(ch =>
+                    `<button class="char-btn${firstCharFilter === ch ? ' active' : ''}" data-char="${ch}" data-mode="first">${ch}</button>`
+                ).join('');
+
+            document.getElementById('lastCharButtons').innerHTML =
+                lastChars.map(ch =>
+                    `<button class="char-btn${lastCharFilter === ch ? ' active' : ''}" data-char="${ch}" data-mode="last">${ch}</button>`
+                ).join('');
+
+            // フィルターがかかっているときはトグルボタンをハイライト・自動オープン
+            const hasFilter = firstCharFilter !== null || lastCharFilter !== null;
+            const toggleBtn = document.getElementById('charToggleBtn');
+            const panel     = document.getElementById('charFilters');
+            if (hasFilter) {
+                toggleBtn.classList.add('active');
+                // まだ開いていない場合はじどうで開く
+                if (!panel.classList.contains('open')) {
+                    panel.classList.add('open');
+                    toggleBtn.classList.add('open');
+                }
+            } else {
+                // フィルターがなくなったらハイライト解除（パネルの開閉はそのまま）
+                if (!panel.classList.contains('open')) {
+                    toggleBtn.classList.remove('active');
+                }
+            }
         }
 
         function renderPokemon(pokemon) {
@@ -1926,27 +2090,35 @@
         }
 
         function filterPokemon() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rawSearch = document.getElementById('searchInput').value;
+            // ひらがな・カタカナを正規化してひらがなにそろえてけんさく
+            const searchTerm = toHiragana(rawSearch.toLowerCase());
             const generation = document.getElementById('generationFilter').value;
             const favs = getFavorites();
 
             filteredPokemon = pokemonData.filter(p => {
-                const matchesSearch = p.name.toLowerCase().includes(searchTerm) ||
-                                     String(p.id).includes(searchTerm);
+                const normalizedName = toHiragana(p.name.toLowerCase());
+                const matchesSearch = normalizedName.includes(searchTerm) ||
+                                     String(p.id).includes(rawSearch);
                 const matchesGeneration = !generation || p.generation === parseInt(generation);
                 // ANDけんさく：せんたくされたすべてのタイプをもっているか
                 const matchesType = selectedTypes.size === 0 ||
                                    Array.from(selectedTypes).every(t => p.types.includes(t));
                 // お気に入りフィルター
                 const matchesFav = !showFavOnly || favs.has(p.id);
+                // はじまりのもじフィルター
+                const matchesFirst = !firstCharFilter || toHiragana(p.name[0]) === firstCharFilter;
+                // おわりのもじフィルター
+                const matchesLast  = !lastCharFilter  || toHiragana(p.name[p.name.length - 1]) === lastCharFilter;
 
-                return matchesSearch && matchesGeneration && matchesType && matchesFav;
+                return matchesSearch && matchesGeneration && matchesType && matchesFav && matchesFirst && matchesLast;
             });
 
             renderPokemon(filteredPokemon);
             updateDisplayCount();
-            // フィルタリングけっかにあわせてタイプボタンのじょうたいもこうしん
+            // フィルタリングけっかにあわせてタイプ・もじボタンのじょうたいもこうしん
             renderTypeFilters();
+            renderCharFilters();
         }
 
         function attachEventListeners() {
@@ -1958,9 +2130,25 @@
                 document.getElementById('generationFilter').value = '';
                 selectedTypes.clear();
                 showFavOnly = false;
+                firstCharFilter = null;
+                lastCharFilter  = null;
                 document.getElementById('favFilterBtn').classList.remove('active');
+                // もじフィルターパネルをとじる
+                document.getElementById('charFilters').classList.remove('open');
+                const charToggle = document.getElementById('charToggleBtn');
+                charToggle.classList.remove('active', 'open');
                 filterPokemon();
                 updateFavCount();
+            });
+
+            // ===== もじフィルター トグルボタン =====
+            document.getElementById('charToggleBtn').addEventListener('click', () => {
+                const panel = document.getElementById('charFilters');
+                const btn   = document.getElementById('charToggleBtn');
+                const isOpen = panel.classList.toggle('open');
+                btn.classList.toggle('open', isOpen);
+                // フィルターがかかっているときはアクティブ色をキープ
+                btn.classList.toggle('active', isOpen || firstCharFilter !== null || lastCharFilter !== null);
             });
 
             document.getElementById('typeFilters').addEventListener('click', (e) => {
@@ -1977,6 +2165,21 @@
                     }
                     filterPokemon();
                 }
+            });
+
+            // ===== もじフィルター（はじまり・おわり）=====
+            document.getElementById('charFilters').addEventListener('click', (e) => {
+                const btn = e.target.closest('.char-btn');
+                if (!btn) return;
+                const ch   = btn.dataset.char;
+                const mode = btn.dataset.mode;
+                if (mode === 'first') {
+                    // もういちどおなじもじをおしたらフィルターかいじょ
+                    firstCharFilter = (firstCharFilter === ch) ? null : ch;
+                } else {
+                    lastCharFilter = (lastCharFilter === ch) ? null : ch;
+                }
+                filterPokemon();
             });
 
             // ===== お気に入りフィルターボタン =====
